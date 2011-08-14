@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <omp.h>
 #include <cassert>
 
 using namespace std;
@@ -45,14 +46,6 @@ public:
 		return (m * o.n > o.m * n);
 	}
 	bool operator==(const fraction & o) {
-/*
-		cout << "m: " << m << endl;
-		cout << "n: " << n << endl;
-		cout << "o.m: " << o.m << endl;
-		cout << "o.n: " << o.n << endl;
-		cout << "i: " << m * o.n << endl;
-		cout << "j: " << n * o.m << endl;
-*/
 		return (o.m * n == m * o.n);
 	}
 	fraction clone() {
@@ -168,7 +161,7 @@ fraction next_number(vector<int> &mark, vector<fraction> &num)
 	return res;
 }
 
-bool solve(vector<fraction> nums, fraction n, string &res, int first = 0)
+bool solve(vector<fraction> nums, fraction n, string &res)
 {
 	int i, j, count, flag;
 	fraction m;
@@ -184,23 +177,20 @@ bool solve(vector<fraction> nums, fraction n, string &res, int first = 0)
 	if(nums.size() == 2) {
 		flag = true;
 		res = "";
-#ifdef PARALLEL
-#pragma omp parallel for
-#endif
 		for(i = 0; i < 6; i++) {
 			tmp[i] = "";
 			if(flag) {
-				if(nums[0] == n - nums[1])
+				if(i == 5 && nums[0] == n - nums[1])
 					tmp[i] = "(" + nums[0].intn() + "+" + nums[1].intn() + ")";
-				else if(nums[0] == n + nums[1])
+				else if(i == 4 && nums[0] == n + nums[1])
 					tmp[i] = "(" + nums[0].intn() + "-" + nums[1].intn() + ")";
-				else if(!(nums[1] == fraction(0)) && nums[0] == n / nums[1])
+				else if(i == 0 && !(nums[1] == fraction(0)) && nums[0] == n / nums[1])
 					tmp[i] = "(" + nums[0].intn() + "*" + nums[1].intn() + ")";
-				else if(!(nums[1] == fraction(0)) && nums[0] == n * nums[1])
+				else if(i == 1 && !(nums[1] == fraction(0)) && nums[0] == n * nums[1])
 					tmp[i] = "(" + nums[0].intn() + "/" + nums[1].intn() + ")";
-				else if(nums[1] == n + nums[0])
+				else if(i == 3 && nums[1] == n + nums[0])
 					tmp[i] = "(" + nums[1].intn() + "-" + nums[0].intn() + ")";
-				else if(!(nums[0] == fraction(0)) && nums[1] == n * nums[0])
+				else if(i == 2 && !(nums[0] == fraction(0)) && nums[1] == n * nums[0])
 					tmp[i] = "(" + nums[1].intn() + "/" + nums[0].intn() + ")";
 				else
 					continue;
@@ -278,20 +268,25 @@ bool solve(vector<fraction> nums, fraction n, string &res, int first = 0)
 
 int main(void)
 {
-	int i, j, n;
-	string result;
-	while(true) {
-		vector<fraction> nums;
-		cin >> n;
-		if(cin.eof())
-			break;
-		for(i = 0; i < n; i++) {
-			cin >> j;
-			nums.push_back(fraction(j));
+	int i, j, k, n, m;
+	cin >> n;
+	string result[n];
+	vector<fraction> nums[n];
+	for(i = 0; i < n; i++) {
+		cin >> m;
+		for(j = 0; j < m; j++) {
+			cin >> k;
+			nums[i].push_back(fraction(k));
 		}
-		sort(nums.begin(), nums.end(), sortpattern());
-		solve(nums, fraction(ANSWER), result, 1);
-		cout << result << endl;
 	}
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+	for(i = 0; i < n; i++) {
+		sort(nums[i].begin(), nums[i].end(), sortpattern());
+		solve(nums[i], fraction(ANSWER), result[i]);
+	}
+	for(i = 0; i < n; i++)
+		cout << result[i] << endl;
 	return 0;
 }
